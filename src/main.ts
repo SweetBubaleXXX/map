@@ -1,3 +1,14 @@
+import { LngLat } from "ymaps3";
+import { LOCATION_POLLING_INTERVAL_MS } from "./constants";
+import { getLocation } from "./helpers";
+import { YMapDefaultMarker } from "@yandex/ymaps3-default-ui-theme";
+
+let currentLocation: {
+  marker: YMapDefaultMarker;
+  location: LngLat;
+  timestamp: number;
+} | null = null;
+
 main();
 
 async function main() {
@@ -11,15 +22,8 @@ async function main() {
     YMapControls,
   } = ymaps3;
 
-  ymaps3.import.registerCdn(
-    "https://cdn.jsdelivr.net/npm/{package}",
-    "@yandex/ymaps3-default-ui-theme@latest"
-  );
-  // @ts-ignore
-  const { YMapZoomControl, YMapGeolocationControl } = await ymaps3.import(
-    // @ts-ignore
-    "@yandex/ymaps3-default-ui-theme"
-  );
+  const { YMapZoomControl, YMapGeolocationControl, YMapDefaultMarker } =
+    await import("@yandex/ymaps3-default-ui-theme");
 
   const map = new YMap(
     document.getElementById("map")!,
@@ -31,6 +35,22 @@ async function main() {
     },
     [new YMapDefaultSchemeLayer({}), new YMapDefaultFeaturesLayer({})]
   );
+
+  const updateLocation = async () => {
+    const location = await getLocation();
+    console.log("Current location:", location);
+
+    let marker = currentLocation?.marker;
+    if (!marker) {
+      marker = new YMapDefaultMarker({ coordinates: location, id: "me" });
+      map.addChild(marker);
+    }
+
+    currentLocation = { location, marker, timestamp: Date.now() };
+    currentLocation.marker.update({ coordinates: location });
+  };
+  updateLocation();
+  setInterval(updateLocation, LOCATION_POLLING_INTERVAL_MS);
 
   map.addChild(
     new YMapControls({ position: "bottom left" }).addChild(

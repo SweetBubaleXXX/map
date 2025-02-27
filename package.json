@@ -12,5 +12,8 @@
     "@yandex/ymaps3-types": "^1.0.15943616",
     "typescript": "~5.7.2",
     "vite": "^6.2.0"
+  },
+  "dependencies": {
+    "@yandex/ymaps3-default-ui-theme": "^0.0.19"
   }
 }

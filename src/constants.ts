@@ -1,0 +1,1 @@
+export const LOCATION_POLLING_INTERVAL_MS = 10000;
