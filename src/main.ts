@@ -1,7 +1,18 @@
 import { LngLat } from "ymaps3";
 import { LOCATION_POLLING_INTERVAL_MS } from "./constants";
-import { getLocation } from "./helpers";
+import {
+  computeId,
+  getIconColor,
+  getLocation,
+  getUsername,
+  setToolbarCoordinates,
+  setToolbarIcon,
+  setToolbarIconColor,
+} from "./helpers";
 import { YMapDefaultMarker } from "@yandex/ymaps3-default-ui-theme";
+
+let username: string;
+let userId: string;
 
 let currentLocation: {
   marker: YMapDefaultMarker;
@@ -36,22 +47,6 @@ async function main() {
     [new YMapDefaultSchemeLayer({}), new YMapDefaultFeaturesLayer({})]
   );
 
-  const updateLocation = async () => {
-    const location = await getLocation();
-    console.log("Current location:", location);
-
-    let marker = currentLocation?.marker;
-    if (!marker) {
-      marker = new YMapDefaultMarker({ coordinates: location, id: "me" });
-      map.addChild(marker);
-    }
-
-    currentLocation = { location, marker, timestamp: Date.now() };
-    currentLocation.marker.update({ coordinates: location });
-  };
-  updateLocation();
-  setInterval(updateLocation, LOCATION_POLLING_INTERVAL_MS);
-
   map.addChild(
     new YMapControls({ position: "bottom left" }).addChild(
       new YMapZoomControl({})
@@ -66,4 +61,28 @@ async function main() {
       })
     )
   );
+
+  username = getUsername();
+  userId = await computeId(username);
+  console.log("User ID:", userId);
+  setToolbarIcon(username[0]);
+  setToolbarIconColor(getIconColor(userId));
+
+  const updateLocation = async () => {
+    const location = await getLocation();
+    console.log("Current location:", location);
+
+    let marker = currentLocation?.marker;
+    if (!marker) {
+      marker = new YMapDefaultMarker({ coordinates: location, id: "me" });
+      map.addChild(marker);
+    }
+
+    currentLocation = { location, marker, timestamp: Date.now() };
+    currentLocation.marker.update({ coordinates: location });
+
+    setToolbarCoordinates(location);
+  };
+  updateLocation();
+  setInterval(updateLocation, LOCATION_POLLING_INTERVAL_MS);
 }

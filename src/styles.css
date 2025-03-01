@@ -1,6 +1,44 @@
 @import '@yandex/ymaps3-default-ui-theme/dist/esm/index.css';
 
+
 #map {
     height: calc(100vh - 20px);
     width: 100%;
+}
+
+.toolbar {
+    position: fixed;
+    top: 15px;
+    left: 9px;
+    right: 25px;
+    z-index: 10000;
+    font-family: "Roboto", sans-serif;
+}
+
+.toolbar-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    height: 56px;
+    padding: 0 8px;
+    border-radius: 28px;
+    background-color: #252b2d;
+}
+
+.toolbar-coordinates {
+    color: #acb5b9;
+    word-spacing: 10px;
+}
+
+.toolbar-user-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 8px;
+    color: #252b2d;
+    background-color: #86D1EA;
 }
