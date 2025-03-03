@@ -1,15 +1,24 @@
 import { LngLat } from "ymaps3";
-import { LOCATION_POLLING_INTERVAL_MS } from "./constants";
+import {
+  DEFAULT_LAST_SEEN_DELTA_MS,
+  FIREBASE_CONFIGURATION,
+  LOCATION_POLLING_INTERVAL_MS,
+} from "./constants";
 import {
   computeId,
+  getAllLocations,
   getIconColor,
   getLocation,
   getUsername,
+  saveLocationToFirestore,
   setToolbarCoordinates,
   setToolbarIcon,
   setToolbarIconColor,
 } from "./helpers";
 import { YMapDefaultMarker } from "@yandex/ymaps3-default-ui-theme";
+import { YMapMarker } from "ymaps3";
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
 
 let username: string;
 let userId: string;
@@ -19,6 +28,8 @@ let currentLocation: {
   location: LngLat;
   timestamp: number;
 } | null = null;
+
+const markers: { [id: string]: YMapMarker | undefined } = {};
 
 main();
 
@@ -31,6 +42,7 @@ async function main() {
     YMapDefaultSchemeLayer,
     YMapDefaultFeaturesLayer,
     YMapControls,
+    YMapMarker,
   } = ymaps3;
 
   const { YMapZoomControl, YMapGeolocationControl, YMapDefaultMarker } =
@@ -68,9 +80,37 @@ async function main() {
   setToolbarIcon(username[0]);
   setToolbarIconColor(getIconColor(userId));
 
+  const firebaseApp = initializeApp(FIREBASE_CONFIGURATION);
+  const db = getFirestore(firebaseApp);
+
+  const fetchLocations = async () => {
+    const userLocations = await getAllLocations(db, DEFAULT_LAST_SEEN_DELTA_MS);
+
+    userLocations.forEach((userLocation) => {
+      if (userLocation.userId == userId) return;
+
+      const existingMarker = markers[userLocation.userId];
+
+      if (existingMarker) {
+        existingMarker.update({ coordinates: userLocation.coordinates });
+      } else {
+        const markerDiv = document.createElement("div");
+        markerDiv.classList.add("marker");
+        markerDiv.textContent = userLocation.username[0].toUpperCase();
+        markerDiv.style.backgroundColor = getIconColor(userLocation.userId);
+
+        const marker = new YMapMarker(
+          { coordinates: userLocation.coordinates, id: userLocation.userId },
+          markerDiv
+        );
+        markers[userLocation.userId] = marker;
+        map.addChild(marker);
+      }
+    });
+  };
+
   const updateLocation = async () => {
     const location = await getLocation();
-    console.log("Current location:", location);
 
     let marker = currentLocation?.marker;
     if (!marker) {
@@ -82,7 +122,17 @@ async function main() {
     currentLocation.marker.update({ coordinates: location });
 
     setToolbarCoordinates(location);
+
+    await saveLocationToFirestore(db, {
+      userId,
+      username,
+      coordinates: location,
+      timestamp: currentLocation.timestamp,
+    });
   };
+
   updateLocation();
+  fetchLocations();
   setInterval(updateLocation, LOCATION_POLLING_INTERVAL_MS);
+  setInterval(fetchLocations, LOCATION_POLLING_INTERVAL_MS);
 }
