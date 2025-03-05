@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Вычислить по IP</title>
+  <link rel="stylesheet" href="/src/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+    rel="stylesheet">
+
+  <script src="https://api-maps.yandex.ru/v3/?apikey=%VITE_API_KEY%&lang=ru_RU"></script>
+  <script type="module" src="/src/main.ts"></script>
+</head>
+
+<body>
+  <div class="toolbar">
+    <div class="toolbar-content">
+      <img src="/location-logo.svg" />
+      <div class="toolbar-coordinates">? ?</div>
+      <div class="toolbar-user-icon">?</div>
+    </div>
+  </div>
+  <div id="map"></div>
+</body>
+
+</html>
