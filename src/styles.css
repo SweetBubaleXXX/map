@@ -53,4 +53,25 @@
     color: #fff;
     background-color: #8d2121;
     font-family: "Roboto", sans-serif;
+    transition: box-shadow 0.3s ease;
+}
+
+.marker:hover {
+    cursor: pointer;
+    box-shadow: 0 3px 6px 1px #666;
+}
+
+.marker-popup {
+    font-family: "Roboto", sans-serif;
+    font-size: 14px;
+}
+
+.popup-username {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.popup-timestamp {
+    font-weight: 300;
 }

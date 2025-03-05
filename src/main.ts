@@ -15,10 +15,15 @@ import {
   setToolbarIcon,
   setToolbarIconColor,
 } from "./helpers";
-import { YMapDefaultMarker } from "@yandex/ymaps3-default-ui-theme";
+import {
+  YMapDefaultMarker,
+  YMapPopupContentProps,
+  YMapPopupMarker,
+} from "@yandex/ymaps3-default-ui-theme";
 import { YMapMarker } from "ymaps3";
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { UserLocation } from "./types";
 
 let username: string;
 let userId: string;
@@ -29,7 +34,9 @@ let currentLocation: {
   timestamp: number;
 } | null = null;
 
-const markers: { [id: string]: YMapMarker | undefined } = {};
+const markers: {
+  [id: string]: { marker: YMapMarker; popup: YMapPopupMarker } | undefined;
+} = {};
 
 main();
 
@@ -45,8 +52,12 @@ async function main() {
     YMapMarker,
   } = ymaps3;
 
-  const { YMapZoomControl, YMapGeolocationControl, YMapDefaultMarker } =
-    await import("@yandex/ymaps3-default-ui-theme");
+  const {
+    YMapZoomControl,
+    YMapGeolocationControl,
+    YMapDefaultMarker,
+    YMapPopupMarker,
+  } = await import("@yandex/ymaps3-default-ui-theme");
 
   const map = new YMap(
     document.getElementById("map")!,
@@ -83,28 +94,67 @@ async function main() {
   const firebaseApp = initializeApp(FIREBASE_CONFIGURATION);
   const db = getFirestore(firebaseApp);
 
+  const createPopup = (userLocation: UserLocation): YMapPopupContentProps => {
+    const popupDiv = document.createElement("div");
+    popupDiv.classList.add("marker-popup");
+
+    const popupUsername = document.createElement("div");
+    popupUsername.classList.add("popup-username");
+    popupUsername.textContent = userLocation.username;
+    popupDiv.appendChild(popupUsername);
+
+    const popupCoordinates = document.createElement("div");
+    popupCoordinates.classList.add("popup-coordinates");
+    popupCoordinates.textContent = `${userLocation.coordinates[1]} ${userLocation.coordinates[0]}`;
+    popupDiv.appendChild(popupCoordinates);
+
+    const popupLastSeen = document.createElement("div");
+    popupLastSeen.classList.add("popup-timestamp");
+    popupLastSeen.textContent = new Date(
+      userLocation.timestamp
+    ).toLocaleString();
+    popupDiv.appendChild(popupLastSeen);
+
+    return () => popupDiv;
+  };
+
+  const createOrUpdateMarker = (userLocation: UserLocation) => {
+    const existingMarker = markers[userLocation.userId];
+
+    if (existingMarker) {
+      existingMarker.marker.update({ coordinates: userLocation.coordinates });
+    } else {
+      const markerDiv = document.createElement("div");
+      markerDiv.classList.add("marker");
+      markerDiv.textContent = userLocation.username[0].toUpperCase();
+      markerDiv.style.backgroundColor = getIconColor(userLocation.userId);
+
+      const popup = new YMapPopupMarker({
+        coordinates: userLocation.coordinates,
+        position: "left top",
+        content: createPopup(userLocation),
+        show: false,
+      });
+      const marker = new YMapMarker(
+        {
+          coordinates: userLocation.coordinates,
+          id: userLocation.userId,
+          onClick: () => popup.update({ show: !popup.isOpen }),
+        },
+        markerDiv
+      );
+      markers[userLocation.userId] = { marker, popup };
+      map.addChild(popup);
+      map.addChild(marker);
+    }
+  };
+
   const fetchLocations = async () => {
     const userLocations = await getAllLocations(db, DEFAULT_LAST_SEEN_DELTA_MS);
 
     userLocations.forEach((userLocation) => {
-      if (userLocation.userId == userId) return;
-
-      const existingMarker = markers[userLocation.userId];
-
-      if (existingMarker) {
-        existingMarker.update({ coordinates: userLocation.coordinates });
-      } else {
-        const markerDiv = document.createElement("div");
-        markerDiv.classList.add("marker");
-        markerDiv.textContent = userLocation.username[0].toUpperCase();
-        markerDiv.style.backgroundColor = getIconColor(userLocation.userId);
-
-        const marker = new YMapMarker(
-          { coordinates: userLocation.coordinates, id: userLocation.userId },
-          markerDiv
-        );
-        markers[userLocation.userId] = marker;
-        map.addChild(marker);
+      if (userLocation.userId !== userId) {
+        createOrUpdateMarker(userLocation);
       }
     });
   };
