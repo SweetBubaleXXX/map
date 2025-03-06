@@ -39,6 +39,8 @@ const markers: Record<
   { marker: YMapMarker; popup: YMapPopupMarker } | undefined
 > = {};
 
+(window as any).copyCoordinates = copyCoordinates;
+
 main();
 
 async function main() {
@@ -185,5 +187,13 @@ async function main() {
       coordinates: location,
       timestamp: currentLocation.timestamp,
     });
+  }
+}
+
+function copyCoordinates() {
+  if (currentLocation) {
+    const coordinatesText = `${currentLocation.location[1]}, ${currentLocation.location[0]}`;
+    navigator.clipboard.writeText(coordinatesText);
+    alert("Copied");
   }
 }

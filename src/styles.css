@@ -24,6 +24,10 @@
     font-family: "Roboto", sans-serif;
 }
 
+.toolbar:hover {
+    cursor: pointer;
+}
+
 .toolbar-content {
     display: flex;
     justify-content: space-between;
