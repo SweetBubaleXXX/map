@@ -25,25 +25,25 @@ export function getUsername(): string {
   do {
     username = prompt("Введите имя пользователя");
   } while (!username);
-  return username;
+  return username.trim();
+}
+
+function setToolbarElementText(className: string, text: string): void {
+  const element = document.getElementsByClassName(className).item(0);
+  if (element) {
+    element.textContent = text;
+  }
 }
 
 export function setToolbarCoordinates(coordinates: LngLat): void {
-  const toolbarCoordinates = document
-    .getElementsByClassName("toolbar-coordinates")
-    .item(0);
-  if (toolbarCoordinates) {
-    toolbarCoordinates.textContent = `${coordinates[1]} ${coordinates[0]}`;
-  }
+  setToolbarElementText(
+    "toolbar-coordinates",
+    `${coordinates[1]} ${coordinates[0]}`
+  );
 }
 
 export function setToolbarIcon(letter: string): void {
-  const toolbarIcon = document
-    .getElementsByClassName("toolbar-user-icon")
-    .item(0);
-  if (toolbarIcon) {
-    toolbarIcon.textContent = letter.toUpperCase();
-  }
+  setToolbarElementText("toolbar-user-icon", letter.toUpperCase());
 }
 
 export function setToolbarIconColor(color: string): void {
@@ -56,7 +56,7 @@ export function setToolbarIconColor(color: string): void {
 }
 
 export function getIconColor(userId: string): string {
-  const colorIndex = parseInt(`0x${userId.slice(-2)}`, 16) % 8;
+  const colorIndex = parseInt(`0x${userId.slice(-2)}`, 16) % ICON_COLORS.length;
   return ICON_COLORS[colorIndex];
 }
 
@@ -65,8 +65,9 @@ export async function computeId(username: string): Promise<string> {
     "SHA-256",
     new TextEncoder().encode(username.toLowerCase())
   );
-  const resultBytes = [...new Uint8Array(digest)];
-  return resultBytes.map((x) => x.toString(16).padStart(2, "0")).join("");
+  return Array.from(new Uint8Array(digest))
+    .map((x) => x.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 export async function saveLocationToFirestore(
@@ -88,27 +89,21 @@ export async function getAllLocations(
   db: Firestore,
   lastSeenDeltaMs: number
 ): Promise<UserLocation[]> {
-  const now = Date.now();
-  const lastSeenFrom = now - lastSeenDeltaMs;
-
+  const lastSeenFrom = Date.now() - lastSeenDeltaMs;
   const q = query(
     collection(db, "users"),
     where("lastSeen", ">=", Timestamp.fromMillis(lastSeenFrom))
   );
   const querySnapshot = await getDocs(q);
 
-  const result: UserLocation[] = [];
-
-  querySnapshot.forEach((document) => {
+  return querySnapshot.docs.map((document) => {
     const docContent = document.data();
     const coordinates = docContent.coordinates as GeoPoint;
-    result.push({
+    return {
       userId: document.id,
       username: docContent.username as string,
       coordinates: [coordinates.longitude, coordinates.latitude],
       timestamp: (docContent.lastSeen as Timestamp).toMillis(),
-    });
+    };
   });
-
-  return result;
 }

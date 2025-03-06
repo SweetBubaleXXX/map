@@ -4,7 +4,7 @@ export const FIREBASE_CONFIGURATION = JSON.parse(
 
 export const LOCATION_POLLING_INTERVAL_MS = 10000;
 
-export const DEFAULT_LAST_SEEN_DELTA_MS = 48 * 60 * 60 * 1000; // 48 hours
+export const DEFAULT_LAST_SEEN_DELTA_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export const ICON_COLORS = [
   "#90cc41",
@@ -14,5 +14,7 @@ export const ICON_COLORS = [
   "#cc4164",
   "#c91512",
   "#74cccf",
-  "#ad8b00",
+  "#fc7d1c",
+  "#008f26",
+  "#025aa3",
 ];

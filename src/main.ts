@@ -34,9 +34,12 @@ let currentLocation: {
   timestamp: number;
 } | null = null;
 
-const markers: {
-  [id: string]: { marker: YMapMarker; popup: YMapPopupMarker } | undefined;
-} = {};
+const markers: Record<
+  string,
+  { marker: YMapMarker; popup: YMapPopupMarker } | undefined
+> = {};
+
+(window as any).copyCoordinates = copyCoordinates;
 
 main();
 
@@ -94,7 +97,12 @@ async function main() {
   const firebaseApp = initializeApp(FIREBASE_CONFIGURATION);
   const db = getFirestore(firebaseApp);
 
-  const createPopup = (userLocation: UserLocation): YMapPopupContentProps => {
+  updateLocation();
+  fetchLocations();
+  setInterval(updateLocation, LOCATION_POLLING_INTERVAL_MS);
+  setInterval(fetchLocations, LOCATION_POLLING_INTERVAL_MS);
+
+  function createPopup(userLocation: UserLocation): YMapPopupContentProps {
     const popupDiv = document.createElement("div");
     popupDiv.classList.add("marker-popup");
 
@@ -116,9 +124,9 @@ async function main() {
     popupDiv.appendChild(popupLastSeen);
 
     return () => popupDiv;
-  };
+  }
 
-  const createOrUpdateMarker = (userLocation: UserLocation) => {
+  function createOrUpdateMarker(userLocation: UserLocation) {
     const existingMarker = markers[userLocation.userId];
 
     if (existingMarker) {
@@ -147,9 +155,9 @@ async function main() {
       map.addChild(popup);
       map.addChild(marker);
     }
-  };
+  }
 
-  const fetchLocations = async () => {
+  async function fetchLocations() {
     const userLocations = await getAllLocations(db, DEFAULT_LAST_SEEN_DELTA_MS);
 
     userLocations.forEach((userLocation) => {
@@ -157,9 +165,9 @@ async function main() {
         createOrUpdateMarker(userLocation);
       }
     });
-  };
+  }
 
-  const updateLocation = async () => {
+  async function updateLocation() {
     const location = await getLocation();
 
     let marker = currentLocation?.marker;
@@ -179,10 +187,13 @@ async function main() {
       coordinates: location,
       timestamp: currentLocation.timestamp,
     });
-  };
+  }
+}
 
-  updateLocation();
-  fetchLocations();
-  setInterval(updateLocation, LOCATION_POLLING_INTERVAL_MS);
-  setInterval(fetchLocations, LOCATION_POLLING_INTERVAL_MS);
+function copyCoordinates() {
+  if (currentLocation) {
+    const coordinatesText = `${currentLocation.location[1]}, ${currentLocation.location[0]}`;
+    navigator.clipboard.writeText(coordinatesText);
+    alert("Copied");
+  }
 }
